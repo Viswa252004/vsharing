@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1020,8 +1020,11 @@
 
         const notification = document.getElementById('notification');
 
-        // Initialize Socket.IO
-        const socket = io();
+        // Backend URL - Update this to your deployed backend URL
+        const backendUrl = 'https://vsharing-1.onrender.com';
+
+        // Initialize Socket.IO with the backend URL
+        const socket = io(backendUrl);
 
         // State
         let selectedFile = null;
@@ -1276,7 +1279,7 @@
             formData.append('file', selectedFile);
 
             // Upload the file to the server
-            fetch('/api/upload', {
+            fetch(`${backendUrl}/api/upload`, {
                 method: 'POST',
                 body: formData
             })
@@ -1425,10 +1428,10 @@
             viewerFileName.textContent = fileInfo.name;
             viewerFileType.textContent = fileInfo.mimeType || 'Unknown type';
             viewerFileSize.textContent = formatFileSize(fileInfo.size);
-
+            
             // Clear previous content
             viewerContent.innerHTML = '';
-
+            
             // Determine file type and display accordingly
             if (fileInfo.mimeType.startsWith('image/')) {
                 // Display image
@@ -1448,7 +1451,7 @@
                 const pre = document.createElement('pre');
                 pre.textContent = 'Loading...';
                 viewerContent.appendChild(pre);
-
+                
                 // Read text content
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -1466,7 +1469,7 @@
                 `;
                 viewerContent.appendChild(unsupported);
             }
-
+            
             // Show the viewer
             fileViewer.classList.add('active');
         }
@@ -1475,7 +1478,7 @@
         function saveFileLocally(fileInfo, fileBlob) {
             // Create a unique ID for the file
             const fileId = fileInfo.id || 'file-' + Date.now();
-
+            
             // Save file data to localStorage (using IndexedDB for larger files)
             // For simplicity, we'll use localStorage for small files and IndexedDB for larger ones
             if (fileBlob.size < 5 * 1024 * 1024) { // Less than 5MB
@@ -1483,7 +1486,7 @@
                 const reader = new FileReader();
                 reader.onload = function() {
                     const base64data = reader.result;
-
+                    
                     // Save to localStorage
                     const fileData = {
                         id: fileId,
@@ -1493,13 +1496,13 @@
                         data: base64data,
                         receivedAt: new Date().toISOString()
                     };
-
+                    
                     // Add to local files array
                     localFiles.push(fileData);
-
+                    
                     // Save to localStorage
                     localStorage.setItem('fileshare_files', JSON.stringify(localFiles));
-
+                    
                     // Update UI
                     displayReceivedFiles();
                 };
@@ -1515,16 +1518,16 @@
                     receivedAt: new Date().toISOString(),
                     largeFile: true
                 };
-
+                
                 // Add to local files array
                 localFiles.push(fileData);
-
+                
                 // Save to localStorage
                 localStorage.setItem('fileshare_files', JSON.stringify(localFiles));
-
+                
                 // Update UI
                 displayReceivedFiles();
-
+                
                 // In a real app, we would save the actual file to IndexedDB
                 showNotification('Large file saved to your device', 'info');
             }
@@ -1547,36 +1550,36 @@
                 receivedFiles.classList.remove('active');
                 return;
             }
-
+            
             receivedFiles.classList.add('active');
             fileList.innerHTML = '';
-
+            
             // Sort files by received date (newest first)
-            const sortedFiles = [...localFiles].sort((a, b) =>
+            const sortedFiles = [...localFiles].sort((a, b) => 
                 new Date(b.receivedAt) - new Date(a.receivedAt)
             );
-
+            
             sortedFiles.forEach(file => {
                 const li = document.createElement('li');
                 li.className = 'file-item';
-
+                
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'file-item-name';
                 nameDiv.textContent = file.name;
-
+                
                 const sizeSpan = document.createElement('span');
                 sizeSpan.className = 'file-item-size';
                 sizeSpan.textContent = formatFileSize(file.size);
-
+                
                 const viewBtn = document.createElement('button');
                 viewBtn.className = 'view-file-btn';
                 viewBtn.textContent = 'View';
                 viewBtn.addEventListener('click', () => viewLocalFile(file));
-
+                
                 li.appendChild(nameDiv);
                 li.appendChild(sizeSpan);
                 li.appendChild(viewBtn);
-
+                
                 fileList.appendChild(li);
             });
         }
@@ -1587,26 +1590,26 @@
                 showNotification('Large files require additional setup to view', 'info');
                 return;
             }
-
+            
             // Convert base64 to blob
             const base64Data = file.data;
             const byteCharacters = atob(base64Data.split(',')[1]);
             const byteArrays = [];
-
+            
             for (let offset = 0; offset < byteCharacters.length; offset += 512) {
                 const slice = byteCharacters.slice(offset, offset + 512);
                 const byteNumbers = new Array(slice.length);
-
+                
                 for (let i = 0; i < slice.length; i++) {
                     byteNumbers[i] = slice.charCodeAt(i);
                 }
-
+                
                 const byteArray = new Uint8Array(byteNumbers);
                 byteArrays.push(byteArray);
             }
-
+            
             const fileBlob = new Blob(byteArrays, { type: file.mimeType });
-
+            
             // Display in viewer
             displayFileInViewer(file, fileBlob);
         }
